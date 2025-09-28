@@ -1,11 +1,12 @@
-// Firebase configuration - replace with your project config
+// Firebase configuration for home-organizing-app
 const firebaseConfig = {
-    apiKey: "your-api-key-here",
-    authDomain: "your-project.firebaseapp.com",
-    projectId: "your-project-id",
-    storageBucket: "your-project.appspot.com",
-    messagingSenderId: "123456789",
-    appId: "your-app-id"
+    apiKey: "AIzaSyBm81spTnEXcW6E4YvqIL779CYPFf2QQOk",
+    authDomain: "home-organizing-app.firebaseapp.com",
+    projectId: "home-organizing-app",
+    storageBucket: "home-organizing-app.firebasestorage.app",
+    messagingSenderId: "188960921941",
+    appId: "1:188960921941:web:5847195f657edecb12b7dc",
+    measurementId: "G-MWF406K6R3"
 };
 
 // Firebase services wrapper class
