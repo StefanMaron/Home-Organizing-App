@@ -7,30 +7,130 @@ class HomeOrganizerApp {
         this.editingElement = null;
         this.editingTaskId = null;
         this.editingPersonId = null;
+        this.firebaseService = window.firebaseService;
+        this.useFirebase = true;
+        this.realtimeListener = null;
         
         this.init();
     }
 
-    init() {
+    async init() {
+        this.updateConnectionStatus('connecting', 'Connecting...');
+        
+        try {
+            // Initialize Firebase first
+            if (this.useFirebase) {
+                await this.firebaseService.init();
+                await this.firebaseService.signInAnonymously();
+                this.updateConnectionStatus('connected', 'Online');
+            }
+            
+            await this.loadData();
+            this.setupEventListeners();
+            this.renderDashboard();
+            this.updateCalendar();
+            this.renderPeopleView();
+            this.startAutoSave();
+            
+            // Set up real-time listener for collaborative features
+            if (this.useFirebase && this.firebaseService.user) {
+                this.setupRealtimeListener();
+            }
+        } catch (error) {
+            console.error('Firebase initialization failed, falling back to localStorage:', error);
+            this.useFirebase = false;
+            this.updateConnectionStatus('offline', 'Offline');
+            this.loadData();
+            this.setupEventListeners();
+            this.renderDashboard();
+            this.updateCalendar();
+            this.renderPeopleView();
+            this.startAutoSave();
+        }
+    }
+
+    updateConnectionStatus(status, text) {
+        const statusElement = document.getElementById('connection-status');
+        if (statusElement) {
+            statusElement.className = `connection-status ${status}`;
+            statusElement.querySelector('span').textContent = text;
+            
+            const icon = statusElement.querySelector('i');
+            switch (status) {
+                case 'connected':
+                    icon.className = 'fas fa-cloud';
+                    break;
+                case 'offline':
+                    icon.className = 'fas fa-cloud-slash';
+                    break;
+                case 'connecting':
+                default:
+                    icon.className = 'fas fa-sync fa-spin';
+                    break;
+            }
+        }
+    }
+
+    onUserAuthenticated() {
+        // Called when Firebase auth state changes
         this.loadData();
-        this.setupEventListeners();
-        this.renderDashboard();
-        this.updateCalendar();
-        this.renderPeopleView();
-        this.startAutoSave();
+        this.setupRealtimeListener();
+    }
+
+    setupRealtimeListener() {
+        if (this.realtimeListener) {
+            this.realtimeListener(); // Unsubscribe previous listener
+        }
+        
+        this.realtimeListener = this.firebaseService.onUserDataChange((data) => {
+            // Only update if data is newer than our local data
+            const hasChanges = JSON.stringify(this.people) !== JSON.stringify(data.people) || 
+                              JSON.stringify(this.tasks) !== JSON.stringify(data.tasks);
+            
+            if (hasChanges) {
+                this.people = data.people;
+                this.tasks = data.tasks;
+                this.renderDashboard();
+                this.updateCalendar();
+                this.renderPeopleView();
+                console.log('Data updated from real-time sync');
+            }
+        });
     }
 
     // Data Management
-    loadData() {
-        const savedPeople = localStorage.getItem('homeOrganizer_people');
-        const savedTasks = localStorage.getItem('homeOrganizer_tasks');
-        
-        this.people = savedPeople ? JSON.parse(savedPeople) : this.getDefaultPeople();
-        this.tasks = savedTasks ? JSON.parse(savedTasks) : [];
-        
-        // Save default data if none exists
-        if (!savedPeople || !savedTasks) {
-            this.saveData();
+    async loadData() {
+        try {
+            // Try Firebase first if available
+            if (this.useFirebase && this.firebaseService.user) {
+                const firebaseData = await this.firebaseService.loadUserData();
+                
+                if (firebaseData && (firebaseData.people.length > 0 || firebaseData.tasks.length > 0)) {
+                    this.people = firebaseData.people;
+                    this.tasks = firebaseData.tasks;
+                    console.log('Data loaded from Firebase');
+                    return;
+                }
+            }
+            
+            // Fallback to localStorage
+            const savedPeople = localStorage.getItem('homeOrganizer_people');
+            const savedTasks = localStorage.getItem('homeOrganizer_tasks');
+            
+            this.people = savedPeople ? JSON.parse(savedPeople) : this.getDefaultPeople();
+            this.tasks = savedTasks ? JSON.parse(savedTasks) : [];
+            
+            // Save default data if none exists
+            if (!savedPeople || !savedTasks) {
+                await this.saveData();
+            }
+            
+            console.log('Data loaded from localStorage');
+        } catch (error) {
+            console.error('Error loading data:', error);
+            // Emergency fallback
+            this.people = this.getDefaultPeople();
+            this.tasks = [];
         }
     }
 
@@ -42,9 +142,25 @@ class HomeOrganizerApp {
         ];
     }
 
-    saveData() {
-        localStorage.setItem('homeOrganizer_people', JSON.stringify(this.people));
-        localStorage.setItem('homeOrganizer_tasks', JSON.stringify(this.tasks));
+    async saveData() {
+        try {
+            // Save to Firebase if available
+            if (this.useFirebase && this.firebaseService.user) {
+                await Promise.all([
+                    this.firebaseService.savePeople(this.people),
+                    this.firebaseService.saveTasks(this.tasks)
+                ]);
+            }
+            
+            // Always save to localStorage as backup
+            localStorage.setItem('homeOrganizer_people', JSON.stringify(this.people));
+            localStorage.setItem('homeOrganizer_tasks', JSON.stringify(this.tasks));
+        } catch (error) {
+            console.error('Error saving data:', error);
+            // Ensure localStorage backup even if Firebase fails
+            localStorage.setItem('homeOrganizer_people', JSON.stringify(this.people));
+            localStorage.setItem('homeOrganizer_tasks', JSON.stringify(this.tasks));
+        }
     }
 
     startAutoSave() {

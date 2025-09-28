@@ -6,16 +6,27 @@
     <title>Home Task Organizer</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 </head>
 <body>
     <div class="app-container">
         <header class="app-header">
             <h1><i class="fas fa-home"></i> Home Task Organizer</h1>
-            <nav class="nav-buttons">
-                <button id="dashboard-btn" class="nav-btn active"><i class="fas fa-tachometer-alt"></i> Dashboard</button>
-                <button id="calendar-btn" class="nav-btn"><i class="fas fa-calendar"></i> Calendar</button>
-                <button id="people-btn" class="nav-btn"><i class="fas fa-users"></i> People</button>
-            </nav>
+            <div class="header-right">
+                <div id="connection-status" class="connection-status">
+                    <i class="fas fa-wifi"></i>
+                    <span>Connecting...</span>
+                </div>
+                <nav class="nav-buttons">
+                    <button id="dashboard-btn" class="nav-btn active"><i class="fas fa-tachometer-alt"></i> Dashboard</button>
+                    <button id="calendar-btn" class="nav-btn"><i class="fas fa-calendar"></i> Calendar</button>
+                    <button id="people-btn" class="nav-btn"><i class="fas fa-users"></i> People</button>
+                </nav>
+            </div>
         </header>
 
         <main class="app-main">
@@ -132,6 +143,7 @@
         </div>
     </div>
 
+    <script src="firebase-config.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
