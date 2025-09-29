@@ -81,12 +81,21 @@ firebase deploy --only firestore:rules
 3. Initialize: `firebase init` (select Hosting and Firestore)
 4. Deploy: `firebase deploy`
 
-#### Option B: GitHub Actions (Automatic)
-1. Get Firebase token: `firebase login:ci`
-2. Copy the token
-3. Go to GitHub repo Settings > Secrets and variables > Actions
-4. Add new secret: `FIREBASE_TOKEN` with your token value
-5. Push to main branch - automatic deployment will trigger
+#### Option B: GitHub Actions (Automatic - Recommended)
+1. **Generate Service Account Key**:
+   - Go to Firebase Console → Project Settings → Service Accounts
+   - Click "Generate new private key"
+   - Download the JSON file
+   
+2. **Add to GitHub Secrets**:
+   - Go to GitHub repo Settings → Secrets and variables → Actions
+   - Add new secret: `FIREBASE_SERVICE_ACCOUNT`
+   - Paste the entire JSON content as the secret value
+   
+3. **Automatic Deployment**:
+   - Push to main branch → automatic deployment triggers
+   - The workflow uses the secure service account authentication
+   - No manual token management required
 
 ## Monitoring Usage
 
