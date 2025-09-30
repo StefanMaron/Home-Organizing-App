@@ -1,5 +1,52 @@
 # GitHub Actions Deployment Troubleshooting
 
+## ⚠️ CRITICAL: Service Account Configuration Required
+
+**STATUS: BLOCKER** - The pipeline will fail without this configuration.
+
+### Quick Fix
+
+The workflow references `FIREBASE_SERVICE_ACCOUNT` secret that **must be configured** before deployment will work.
+
+**Steps to Configure:**
+
+1. **Generate Service Account Key:**
+   - Go to [Firebase Console](https://console.firebase.google.com) → Select your project
+   - Click ⚙️ (Settings) → Project Settings → Service Accounts tab
+   - Click "Generate new private key" button
+   - **Important:** Download the JSON file immediately (it won't be shown again)
+
+2. **Add GitHub Secret:**
+   - Go to your GitHub repository
+   - Navigate to: Settings → Secrets and variables → Actions
+   - Click "New repository secret"
+   - Name: `FIREBASE_SERVICE_ACCOUNT`
+   - Value: Paste the **entire JSON content** from the downloaded file
+   - Click "Add secret"
+
+3. **Verify Secret Format:**
+   The JSON should look like this (with your actual values):
+   ```json
+   {
+     "type": "service_account",
+     "project_id": "home-organizing-app",
+     "private_key_id": "abc123...",
+     "private_key": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n",
+     "client_email": "firebase-adminsdk-xxxxx@home-organizing-app.iam.gserviceaccount.com",
+     "client_id": "123456789...",
+     "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+     "token_uri": "https://oauth2.googleapis.com/token",
+     ...
+   }
+   ```
+
+4. **Test the Deployment:**
+   - Push a commit to the branch
+   - Check Actions tab for workflow run
+   - Should now deploy successfully
+
+---
+
 ## Common Issues and Solutions
 
 ### 1. Service Account Configuration

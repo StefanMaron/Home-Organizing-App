@@ -526,25 +526,46 @@ class HomeOrganizerApp {
             newValue = this.editingElement.textContent;
         }
 
+        // Sanitize the input
+        newValue = this.sanitizeInput(newValue);
+
         // Update the data
         if (this.editingType === 'task') {
             const task = this.tasks.find(t => t.id === this.editingId);
             if (task && newValue.trim()) {
-                if (this.editingField === 'dueDate') {
-                    task.dueDate = newValue;
-                } else {
-                    task[this.editingField] = newValue;
+                try {
+                    if (this.editingField === 'name') {
+                        task[this.editingField] = this.validateTaskName(newValue);
+                    } else if (this.editingField === 'dueDate') {
+                        task.dueDate = newValue;
+                    } else if (this.editingField === 'description') {
+                        if (newValue.length > 1000) {
+                            throw new Error('Description must be less than 1000 characters');
+                        }
+                        task[this.editingField] = newValue;
+                    } else {
+                        task[this.editingField] = newValue;
+                    }
+                    this.saveData();
+                    this.renderDashboard();
+                } catch (error) {
+                    alert(error.message);
+                    this.renderDashboard();
                 }
-                this.saveData();
-                this.renderDashboard();
             }
         } else if (this.editingType === 'person') {
             const person = this.people.find(p => p.id === this.editingId);
             if (person && newValue.trim()) {
-                person[this.editingField] = newValue;
-                this.saveData();
-                this.renderDashboard();
-                this.renderPeopleView();
+                try {
+                    person[this.editingField] = this.validatePersonName(newValue);
+                    this.saveData();
+                    this.renderDashboard();
+                    this.renderPeopleView();
+                } catch (error) {
+                    alert(error.message);
+                    this.renderDashboard();
+                    this.renderPeopleView();
+                }
             }
         }
 
@@ -611,31 +632,50 @@ class HomeOrganizerApp {
         const formData = new FormData(form);
         const taskId = form.dataset.taskId;
 
-        const taskData = {
-            name: formData.get('name'),
-            assignee: formData.get('assignee') || null,
-            dueDate: formData.get('dueDate') || null,
-            cadence: formData.get('cadence') || 'none',
-            description: formData.get('description') || '',
-            completed: false,
-            subtasks: []
-        };
+        try {
+            // Validate and sanitize inputs
+            const taskName = this.validateTaskName(formData.get('name'));
+            const description = this.sanitizeInput(formData.get('description') || '');
+            
+            // Limit description length
+            if (description.length > 1000) {
+                throw new Error('Description must be less than 1000 characters');
+            }
 
-        if (taskId) {
-            // Update existing task
-            const task = this.tasks.find(t => t.id === taskId);
-            Object.assign(task, taskData);
-        } else {
-            // Create new task
-            taskData.id = this.generateId();
-            taskData.createdAt = new Date().toISOString();
-            this.tasks.push(taskData);
+            const taskData = {
+                name: taskName,
+                assignee: formData.get('assignee') || null,
+                dueDate: formData.get('dueDate') || null,
+                cadence: formData.get('cadence') || 'none',
+                description: description,
+                completed: false,
+                subtasks: []
+            };
+
+            if (taskId) {
+                // Update existing task
+                const task = this.tasks.find(t => t.id === taskId);
+                // Preserve existing subtasks and completion status
+                taskData.subtasks = task.subtasks || [];
+                taskData.completed = task.completed || false;
+                taskData.completedAt = task.completedAt || null;
+                Object.assign(task, taskData);
+            } else {
+                // Create new task
+                taskData.id = this.generateId();
+                taskData.createdAt = new Date().toISOString();
+                this.tasks.push(taskData);
+            }
+
+            this.saveData();
+            this.closeModals();
+            this.renderDashboard();
+            this.updateCalendar();
+        } catch (error) {
+            // Display error to user
+            alert(error.message);
+            console.error('Task save error:', error);
         }
-
-        this.saveData();
-        this.closeModals();
-        this.renderDashboard();
-        this.updateCalendar();
     }
 
     editTask(taskId) {
@@ -723,8 +763,21 @@ class HomeOrganizerApp {
     updateSubtaskName(taskId, subtaskIndex, newName) {
         const task = this.tasks.find(t => t.id === taskId);
         if (task && task.subtasks && task.subtasks[subtaskIndex]) {
-            task.subtasks[subtaskIndex].name = newName;
-            this.saveData();
+            try {
+                // Sanitize and validate subtask name
+                const sanitized = this.sanitizeInput(newName);
+                if (sanitized.trim().length === 0) {
+                    throw new Error('Subtask name cannot be empty');
+                }
+                if (sanitized.length > 200) {
+                    throw new Error('Subtask name must be less than 200 characters');
+                }
+                task.subtasks[subtaskIndex].name = sanitized;
+                this.saveData();
+            } catch (error) {
+                alert(error.message);
+                this.renderDashboard();
+            }
         }
     }
 
@@ -767,25 +820,40 @@ class HomeOrganizerApp {
         const formData = new FormData(form);
         const personId = form.dataset.personId;
 
-        const personData = {
-            name: formData.get('name'),
-            color: formData.get('color')
-        };
+        try {
+            // Validate and sanitize inputs
+            const personName = this.validatePersonName(formData.get('name'));
+            const color = formData.get('color') || '#007bff';
+            
+            // Validate color format (should be hex color)
+            if (!/^#[0-9A-F]{6}$/i.test(color)) {
+                throw new Error('Invalid color format');
+            }
 
-        if (personId) {
-            // Update existing person
-            const person = this.people.find(p => p.id === personId);
-            Object.assign(person, personData);
-        } else {
-            // Create new person
-            personData.id = this.generateId();
-            this.people.push(personData);
+            const personData = {
+                name: personName,
+                color: color
+            };
+
+            if (personId) {
+                // Update existing person
+                const person = this.people.find(p => p.id === personId);
+                Object.assign(person, personData);
+            } else {
+                // Create new person
+                personData.id = this.generateId();
+                this.people.push(personData);
+            }
+
+            this.saveData();
+            this.closeModals();
+            this.renderDashboard();
+            this.renderPeopleView();
+        } catch (error) {
+            // Display error to user
+            alert(error.message);
+            console.error('Person save error:', error);
         }
-
-        this.saveData();
-        this.closeModals();
-        this.renderDashboard();
-        this.renderPeopleView();
     }
 
     editPerson(personId) {
@@ -949,6 +1017,43 @@ class HomeOrganizerApp {
     // Utility Functions
     generateId() {
         return Date.now().toString(36) + Math.random().toString(36).substr(2);
+    }
+
+    sanitizeInput(input) {
+        if (typeof input !== 'string') return '';
+        
+        // Create a temporary div element to leverage browser's text encoding
+        const div = document.createElement('div');
+        div.textContent = input;
+        return div.innerHTML;
+    }
+
+    validateTaskName(name) {
+        if (!name || typeof name !== 'string') {
+            throw new Error('Task name is required');
+        }
+        const trimmed = name.trim();
+        if (trimmed.length === 0) {
+            throw new Error('Task name cannot be empty');
+        }
+        if (trimmed.length > 200) {
+            throw new Error('Task name must be less than 200 characters');
+        }
+        return trimmed;
+    }
+
+    validatePersonName(name) {
+        if (!name || typeof name !== 'string') {
+            throw new Error('Person name is required');
+        }
+        const trimmed = name.trim();
+        if (trimmed.length === 0) {
+            throw new Error('Person name cannot be empty');
+        }
+        if (trimmed.length > 100) {
+            throw new Error('Person name must be less than 100 characters');
+        }
+        return trimmed;
     }
 
     isOverdue(task) {
