@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Task Organizer</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1><i class="fas fa-home"></i> Home Task Organizer</h1>
+            <div class="header-right">
+                <div id="connection-status" class="connection-status">
+                    <i class="fas fa-wifi"></i>
+                    <span>Connecting...</span>
+                </div>
+                <nav class="nav-buttons">
+                    <button id="dashboard-btn" class="nav-btn active"><i class="fas fa-tachometer-alt"></i> Dashboard</button>
+                    <button id="calendar-btn" class="nav-btn"><i class="fas fa-calendar"></i> Calendar</button>
+                    <button id="people-btn" class="nav-btn"><i class="fas fa-users"></i> People</button>
+                </nav>
+            </div>
+        </header>
+
+        <main class="app-main">
+            <!-- Dashboard View -->
+            <section id="dashboard-view" class="view active">
+                <div class="dashboard-header">
+                    <h2>Task Dashboard</h2>
+                    <button id="add-task-btn" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add Task
+                    </button>
+                </div>
+                
+                <div class="dashboard-content">
+                    <div class="people-columns" id="people-columns">
+                        <!-- People columns will be dynamically generated -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Calendar View -->
+            <section id="calendar-view" class="view">
+                <div class="calendar-header">
+                    <h2>Calendar View</h2>
+                    <div class="calendar-nav">
+                        <button id="prev-month" class="btn"><i class="fas fa-chevron-left"></i></button>
+                        <span id="current-month"></span>
+                        <button id="next-month" class="btn"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+                <div id="calendar-grid" class="calendar-grid">
+                    <!-- Calendar will be dynamically generated -->
+                </div>
+            </section>
+
+            <!-- People Management View -->
+            <section id="people-view" class="view">
+                <div class="people-header">
+                    <h2>People Management</h2>
+                    <button id="add-person-btn" class="btn btn-primary">
+                        <i class="fas fa-user-plus"></i> Add Person
+                    </button>
+                </div>
+                <div id="people-list" class="people-list">
+                    <!-- People list will be dynamically generated -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Task Modal -->
+    <div id="task-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Add Task</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="task-form" class="modal-body">
+                <div class="form-group">
+                    <label for="task-name">Task Name:</label>
+                    <input type="text" id="task-name" name="name" required maxlength="200" 
+                           placeholder="Enter task name">
+                </div>
+                <div class="form-group">
+                    <label for="task-assignee">Assigned To:</label>
+                    <select id="task-assignee" name="assignee">
+                        <option value="">Select Person</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="task-due-date">Due Date:</label>
+                    <input type="date" id="task-due-date" name="dueDate">
+                </div>
+                <div class="form-group">
+                    <label for="task-cadence">Cadence:</label>
+                    <select id="task-cadence" name="cadence">
+                        <option value="none">One-time</option>
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="task-description">Description:</label>
+                    <textarea id="task-description" name="description" rows="3" 
+                              maxlength="1000" placeholder="Optional description"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-task">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="save-task">Save Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Person Modal -->
+    <div id="person-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="person-modal-title">Add Person</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="person-form" class="modal-body">
+                <div class="form-group">
+                    <label for="person-name">Name:</label>
+                    <input type="text" id="person-name" name="name" required maxlength="100" 
+                           placeholder="Enter person name">
+                </div>
+                <div class="form-group">
+                    <label for="person-color">Color:</label>
+                    <input type="color" id="person-color" name="color" value="#007bff" required>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-person">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="save-person">Save Person</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="firebase-config.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
